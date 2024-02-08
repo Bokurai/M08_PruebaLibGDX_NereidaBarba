@@ -2,6 +2,7 @@ package com.mygdx.m08_flappy.nereidabarba;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -12,6 +13,8 @@ public class Bird extends Game {
 	SpriteBatch batch;
 	BitmapFont smallFont, bigFont;
 
+	int topScore;
+	int lastScore;
 	AssetManager manager;
 	public void create() {
 
@@ -20,6 +23,8 @@ public class Bird extends Game {
 		manager.load("pipe_up.png", Texture.class);
 		manager.load("pipe_down.png", Texture.class);
 		manager.load("background.png", Texture.class);
+		manager.load("flap.wav", Sound.class);
+		manager.load("fail.wav", Sound.class);
 		manager.finishLoading();
 		batch = new SpriteBatch();
 // Create bitmap fonts from TrueType font
@@ -37,6 +42,9 @@ public class Bird extends Game {
 		bigFont = generator.generateFont(params); // font size 50 pixels
 		generator.dispose(); // don't forget to dispose to avoid memory leaks!
 		this.setScreen(new MainMenuScreen(this));
+
+		topScore = 0;
+		lastScore = 0;
 	}
 	public void render() {
 		super.render(); // important!
