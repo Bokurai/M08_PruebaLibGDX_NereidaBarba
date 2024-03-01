@@ -5,12 +5,14 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.TimeUtils;
@@ -27,7 +29,6 @@ public class GameScreen implements Screen {
     Array<Pipe> obstacles;
     long lastObstacleTime;
     private TextButton pauseButton;
-    private boolean paused = false;
 
     public GameScreen(final Bird gam) {
         this.game = gam;
@@ -45,19 +46,26 @@ public class GameScreen implements Screen {
 
         score = 0;
 
-        // Crear skin y botón de pausa
-        Skin skin = new Skin(Gdx.files.internal("uiskin.json"));
-        pauseButton = new TextButton("Pause", skin);
-        pauseButton.setPosition(700, 440); // Posición del botón de pausa
-        pauseButton.setSize(100, 30); // Tamaño del botón de pausa
+        Skin skin = new Skin();
+
+        TextureRegion buttonUp = new TextureRegion(new Texture(Gdx.files.internal("button_up.png")));
+        TextureRegion buttonDown = new TextureRegion(new Texture(Gdx.files.internal("button_down.png")));
+
+
+        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
+        buttonStyle.up = new TextureRegionDrawable(buttonUp);
+        buttonStyle.down = new TextureRegionDrawable(buttonDown);
+
+        skin.add("default", buttonStyle);
+
+        // Crear botón con el estilo del skin
+        TextButton pauseButton = new TextButton("Pause", skin);
+        pauseButton.setPosition(600, 400);
+        pauseButton.setSize(75, 50);
         pauseButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                if (paused) {
-                    resumeGame();
-                } else {
-                    pauseGame();
-                }
+                game.setScreen(new Pausa(game,GameScreen.this));
             }
         });
         stage.addActor(pauseButton);
@@ -67,13 +75,6 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         dead = false;
 
-        // Lógica de pausa
-        if (paused) {
-            return; // Si está pausado, no procesar la lógica de actualización
-        }
-
-        // Comprueba si el jugador no se sale de la pantalla.
-        // Si se sale por la parte inferior, game over
         if (player.getBounds().y > 480 - 45) {
             player.setY(480 - 45);
         }
@@ -81,12 +82,10 @@ public class GameScreen implements Screen {
             dead = true;
         }
 
-        // Comprueba si es necesario generar un nuevo obstáculo
         if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
             spawnObstacle();
         }
 
-        // Comprueba si las tuberías colisionan con el jugador
         Iterator<Pipe> iter = obstacles.iterator();
         while (iter.hasNext()) {
             Pipe pipe = iter.next();
@@ -95,7 +94,6 @@ public class GameScreen implements Screen {
             }
         }
 
-        // Elimina del array las tuberías que están fuera de pantalla
         iter = obstacles.iterator();
         while (iter.hasNext()) {
             Pipe pipe = iter.next();
@@ -104,15 +102,12 @@ public class GameScreen implements Screen {
             }
         }
 
-        // Dibuja la puntuación en la pantalla
         game.batch.begin();
         game.smallFont.draw(game.batch, "Score: " + (int) score, 10, 470);
         game.batch.end();
 
-        // Incrementa la puntuación con el tiempo de juego
         score += Gdx.graphics.getDeltaTime();
 
-        // Si el jugador ha muerto, muestra la pantalla de Game Over
         if (dead) {
             game.manager.get("fail.wav", Sound.class).play();
             game.lastScore = (int) score;
@@ -123,25 +118,15 @@ public class GameScreen implements Screen {
             dispose();
         }
 
-        // Limpia la pantalla con un color
         ScreenUtils.clear(0.3f, 0.8f, 0.8f, 1);
-
-        // Actualiza la cámara
         camera.update();
-
-        // Establece la matriz de proyección para el batch
         game.batch.setProjectionMatrix(camera.combined);
-
-        // Dibuja el fondo
         game.batch.begin();
         game.batch.draw(game.manager.get("background.png", Texture.class), 0, 0);
         game.batch.end();
-
-        // Dibuja los actores
         stage.getBatch().setProjectionMatrix(camera.combined);
         stage.draw();
 
-        // Procesa la entrada del usuario
         if (Gdx.input.justTouched()) {
             game.manager.get("flap.wav", Sound.class).play();
             player.impulso();
@@ -174,10 +159,7 @@ public class GameScreen implements Screen {
     }
 
     private void spawnObstacle() {
-        // Calcula la altura del obstáculo aleatoriamente
         float holey = MathUtils.random(50, 230);
-
-        // Crea dos obstáculos: Una tubería superior y una inferior
         Pipe pipe1 = new Pipe();
         pipe1.setX(800);
         pipe1.setY(holey - 230);
