@@ -37,6 +37,7 @@ public class GameScreen implements Screen {
     boolean lastObstaclePassed;
     ImageButton pauseButton;
     SpriteBatch batch;
+    boolean strawberryAppears;
 
 
     public GameScreen(final Bird gam) {
@@ -54,6 +55,7 @@ public class GameScreen implements Screen {
         obstacles = new Array<Pipe>();
         spawnObstacle();
 
+        strawberryAppears = false;
         score = 0;
         lastObstaclePassed = false;
 
@@ -76,7 +78,10 @@ public class GameScreen implements Screen {
             // Comprova si cal generar un obstacle nou
             if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
                 spawnObstacle();
-                spawnStrawberry();
+            }
+
+            if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
+                strawberryAppears = true;
             }
             // Comprova si les tuberies colisionen amb el jugador
             Iterator<Pipe> iter = obstacles.iterator();
@@ -155,10 +160,7 @@ public class GameScreen implements Screen {
                         touchY >= pauseButtonY && touchY <= pauseButtonY + pauseButtonHeight) {
                     pauseGame();
                 }
-
             }
-
-
             stage.act();
         }
     }
@@ -217,13 +219,19 @@ public class GameScreen implements Screen {
         obstacles.add(pipe2);
         stage.addActor(pipe2);
         lastObstacleTime = TimeUtils.nanoTime();
+        if(strawberryAppears){
+            float strawberryX = (pipe1.getX() + pipe2.getX() + pipe2.getWidth())/2;
+            float strawberryY = (pipe1.getY() + pipe2.getY() + pipe1.getHeight())/2;
+            spawnStrawberry(strawberryX, strawberryY);
+            strawberryAppears = false;
+        }
+
     }
 
-    private void spawnStrawberry() {
-        float strawberryY = MathUtils.random(50, 230);
+    private void spawnStrawberry(float x, float y) {
         Strawberry strawberry = new Strawberry();
-        strawberry.setX(800);
-        strawberry.setY(strawberryY - 230);
+        strawberry.setX(x);
+        strawberry.setY(y);
         strawberry.setManager(game.manager);
         strawberries.add(strawberry);
         stage.addActor(strawberry);
