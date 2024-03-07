@@ -11,21 +11,18 @@ public class Strawberry extends Actor {
     private AssetManager manager;
     private boolean paused; // Nuevo atributo para el estado pausado
 
-    public Strawberry(AssetManager manager) {
-        this.manager = manager;
+    public Strawberry() {
         bounds = new Rectangle();
-        setSize(20, 20);
-        setVisible(false);
+        setSize(50, 50);
     }
 
     @Override
     public void act(float delta) {
         super.act(delta);
-
-        bounds.set(getX(), getY(), getWidth(), getHeight());
-        if (!isVisible()) {
-            setVisible(true);
+        if (!paused) { // Solo mover si no está pausado
+            moveBy(-200 * delta, 0);
         }
+        bounds.set(getX(), getY(), getWidth(), getHeight());
         if (getX() < -64) {
             remove();
         }
@@ -43,6 +40,10 @@ public class Strawberry extends Actor {
     public Rectangle getBounds() {
         return bounds;
     }
+    public void setManager(AssetManager manager) {
+        this.manager = manager;
+    }
+
 
     public void setPaused(boolean paused) {
         this.paused = paused;

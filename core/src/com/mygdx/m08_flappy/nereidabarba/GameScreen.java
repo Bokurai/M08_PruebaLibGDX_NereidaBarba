@@ -34,12 +34,9 @@ public class GameScreen implements Screen {
     float pausedScore;
     float pausedPlayerX;
     float pausedPlayerY;
-   boolean lastObstaclePassed;
-   ImageButton pauseButton;
+    boolean lastObstaclePassed;
+    ImageButton pauseButton;
     SpriteBatch batch;
-
-    private static final int STRAWBERRY_SPAWN_THRESHOLD = 5; // Cantidad de puntos para que aparezca una fresa
-
 
 
     public GameScreen(final Bird gam) {
@@ -79,6 +76,7 @@ public class GameScreen implements Screen {
             // Comprova si cal generar un obstacle nou
             if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
                 spawnObstacle();
+                spawnStrawberry();
             }
             // Comprova si les tuberies colisionen amb el jugador
             Iterator<Pipe> iter = obstacles.iterator();
@@ -130,9 +128,6 @@ public class GameScreen implements Screen {
             stage.getBatch().setProjectionMatrix(camera.combined);
             stage.draw();
 
-            if ((int) score >= STRAWBERRY_SPAWN_THRESHOLD && (int) score % STRAWBERRY_SPAWN_THRESHOLD == 0) {
-                spawnStrawberry();
-            }
 
             // process user input
             if (Gdx.input.justTouched()) {
@@ -225,18 +220,13 @@ public class GameScreen implements Screen {
     }
 
     private void spawnStrawberry() {
-        // Calcular posición y altura aleatoria para la fresa
-        float strawberryY = MathUtils.random(50, 430);
-
-        // Crear la fresa y configurar su posición
-        Strawberry strawberry = new Strawberry(game.manager);
-        strawberry.setPosition(800, strawberryY);
-
-        // Agregar la fresa al escenario y al array de fresas
-        stage.addActor(strawberry);
+        float strawberryY = MathUtils.random(50, 230);
+        Strawberry strawberry = new Strawberry();
+        strawberry.setX(800);
+        strawberry.setY(strawberryY - 230);
+        strawberry.setManager(game.manager);
         strawberries.add(strawberry);
-
-        // Actualizar el tiempo del último objeto generado
+        stage.addActor(strawberry);
         lastObstacleTime = TimeUtils.nanoTime();
     }
 
@@ -259,7 +249,7 @@ public class GameScreen implements Screen {
         Gdx.graphics.setContinuousRendering(false);
 
         //Es pasen les variables a la nova pantalla
-        game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerX, pausedPlayerY));
+        game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerY, pausedPlayerX));
     }
 
     public void resumeGame(float playerX, float playerY, float score) {
