@@ -12,7 +12,6 @@ public class PauseScreen implements Screen {
     private final Bird game;
     private OrthographicCamera camera;
     private SpriteBatch batch;
-    private BitmapFont font;
     private GameScreen gameScreen;
     private float playerX;
     private float playerY;
@@ -28,7 +27,6 @@ public class PauseScreen implements Screen {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 480);
         batch = new SpriteBatch();
-        font = game.manager.get("font.fnt", BitmapFont.class); // Assuming "font.fnt" is the file name of your bitmap font
     }
 
     @Override
@@ -42,11 +40,11 @@ public class PauseScreen implements Screen {
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        font.draw(batch, "Paused", 350, 240); // Adjust the position of the text as needed
+        game.bigFont.draw(game.batch, "Welcome to Puig Bird!!! ", 50, 300);
         batch.end();
 
         if (Gdx.input.justTouched()) {
-            gameScreen.resumeGame(playerX, playerY, score); // Volver al juego y restaurar los valores
+            gameScreen.resumeGame(playerX, playerY, score);
             game.setScreen(gameScreen);
             dispose();
         }
