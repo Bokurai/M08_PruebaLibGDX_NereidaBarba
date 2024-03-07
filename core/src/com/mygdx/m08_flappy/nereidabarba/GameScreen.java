@@ -23,12 +23,17 @@ public class GameScreen implements Screen {
     final Bird game;
     OrthographicCamera camera;
     boolean dead;
+    boolean pause;
     Stage stage;
     Player player;
     float score;
     Array<Pipe> obstacles;
     long lastObstacleTime;
-    private TextButton pauseButton;
+    float pausedScore;
+    float pausedPlayerX;
+    float pausedPlayerY;
+    Iterator<Pipe> pausedPipeIterator;
+    private ImageButton pauseButton;
 
     public GameScreen(final Bird gam) {
         this.game = gam;
@@ -45,34 +50,12 @@ public class GameScreen implements Screen {
         spawnObstacle();
 
         score = 0;
-
-        Skin skin = new Skin();
-
-        TextureRegion buttonUp = new TextureRegion(new Texture(Gdx.files.internal("button_up.png")));
-        TextureRegion buttonDown = new TextureRegion(new Texture(Gdx.files.internal("button_down.png")));
-
-
-        TextButton.TextButtonStyle buttonStyle = new TextButton.TextButtonStyle();
-        buttonStyle.up = new TextureRegionDrawable(buttonUp);
-        buttonStyle.down = new TextureRegionDrawable(buttonDown);
-
-        skin.add("default", buttonStyle);
-
-        // Crear botón con el estilo del skin
-        TextButton pauseButton = new TextButton("Pause", skin);
-        pauseButton.setPosition(600, 400);
-        pauseButton.setSize(75, 50);
-        pauseButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new Pausa(game,GameScreen.this));
-            }
-        });
-        stage.addActor(pauseButton);
+      
     }
 
     @Override
     public void render(float delta) {
+        pause = false;
         dead = false;
 
         if (player.getBounds().y > 480 - 45) {
@@ -139,7 +122,18 @@ public class GameScreen implements Screen {
     }
 
     @Override
-    public void show() {
+    public void show() {  // Botón de pausa
+        Texture pauseButtonTexture = game.manager.get("pause_button.png", Texture.class);
+        pauseButton = new ImageButton(pauseButtonTexture);
+        pauseButton.setPosition(10, 10);
+        pauseButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                pauseGame();
+            }
+        });
+        stage.addActor(pauseButton);
+    }
     }
 
     @Override
@@ -175,5 +169,14 @@ public class GameScreen implements Screen {
         obstacles.add(pipe2);
         stage.addActor(pipe2);
         lastObstacleTime = TimeUtils.nanoTime();
+    }
+
+      private void pauseGame() {
+           paused = true;
+        pausedScore = score;
+        pausedPlayerX = player.getX();
+        pausedPlayerY = player.getY();
+        pausedPipeIterator = obstacles.iterator();
+        game.setScreen(new PauseScreen(game, this));
     }
 }
