@@ -35,12 +35,13 @@ public class PauseScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClearColor(0.2588f, 0.5294f, 0.9608f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        game.bigFont.draw(game.batch, "Welcome to Puig Bird!!! ", 50, 300);
+        game.bigFont.draw(batch, "Pause", 50, 300);
+        game.smallFont.draw(batch, "Touch again to continue", 50, 250);
         batch.end();
 
         if (Gdx.input.justTouched()) {
@@ -49,6 +50,7 @@ public class PauseScreen implements Screen {
             dispose();
         }
     }
+
 
     @Override
     public void resize(int width, int height) {

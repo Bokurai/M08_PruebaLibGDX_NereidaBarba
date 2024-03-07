@@ -3,15 +3,17 @@ package com.mygdx.m08_flappy.nereidabarba;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
-import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -32,8 +34,9 @@ public class GameScreen implements Screen {
     float pausedScore;
     float pausedPlayerX;
     float pausedPlayerY;
-    Iterator<Pipe> pausedPipeIterator;
+    private boolean lastObstaclePassed;
     private ImageButton pauseButton;
+    private SpriteBatch batch;
 
     public GameScreen(final Bird gam) {
         this.game = gam;
@@ -46,92 +49,126 @@ public class GameScreen implements Screen {
         stage.getViewport().setCamera(camera);
         stage.addActor(player);
 
+        // create the obstacles array and spawn the first obstacle
         obstacles = new Array<Pipe>();
         spawnObstacle();
 
         score = 0;
-      
+        lastObstaclePassed = false;
+
+        batch = new SpriteBatch();
     }
 
     @Override
     public void render(float delta) {
-        pause = false;
-        dead = false;
-
-        if (player.getBounds().y > 480 - 45) {
-            player.setY(480 - 45);
-        }
-        if (player.getBounds().y < 0 - 45) {
-            dead = true;
-        }
-
-        if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
-            spawnObstacle();
-        }
-
-        Iterator<Pipe> iter = obstacles.iterator();
-        while (iter.hasNext()) {
-            Pipe pipe = iter.next();
-            if (pipe.getBounds().overlaps(player.getBounds())) {
+        if (!pause) {
+            dead = false;
+            // Comprova que el jugador no es surt de la pantalla.
+            // Si surt per la part inferior, game over
+            if (player.getBounds().y > 480 - 45)
+                player.setY(480 - 45);
+            if (player.getBounds().y < 0 - 45) {
                 dead = true;
             }
-        }
-
-        iter = obstacles.iterator();
-        while (iter.hasNext()) {
-            Pipe pipe = iter.next();
-            if (pipe.getX() < -64) {
-                obstacles.removeValue(pipe, true);
+            // Comprova si cal generar un obstacle nou
+            if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
+                spawnObstacle();
             }
-        }
-
-        game.batch.begin();
-        game.smallFont.draw(game.batch, "Score: " + (int) score, 10, 470);
-        game.batch.end();
-
-        score += Gdx.graphics.getDeltaTime();
-
-        if (dead) {
-            game.manager.get("fail.wav", Sound.class).play();
-            game.lastScore = (int) score;
-            if (game.lastScore > game.topScore) {
-                game.topScore = game.lastScore;
+            // Comprova si les tuberies colisionen amb el jugador
+            Iterator<Pipe> iter = obstacles.iterator();
+            while (iter.hasNext()) {
+                Pipe pipe = iter.next();
+                if (pipe.getBounds().overlaps(player.getBounds())) {
+                    dead = true;
+                }
+                //Quan el jugador passa per un obstacle, s'hi suma un punt extra
+                else if (pipe.getX() < player.getX() && !lastObstaclePassed) {
+                    lastObstaclePassed = true;
+                    score += 1;
+                }
             }
-            game.setScreen(new GameOverScreen(game));
-            dispose();
-        }
+            // Treure de l'array les tuberies que estan fora de pantalla
+            iter = obstacles.iterator();
+            while (iter.hasNext()) {
+                Pipe pipe = iter.next();
+                if (pipe.getX() < -64) {
+                    obstacles.removeValue(pipe, true);
+                }
+            }
+            //La puntuació augmenta amb el temps de joc
+            score += Gdx.graphics.getDeltaTime();
 
-        ScreenUtils.clear(0.3f, 0.8f, 0.8f, 1);
-        camera.update();
-        game.batch.setProjectionMatrix(camera.combined);
-        game.batch.begin();
-        game.batch.draw(game.manager.get("background.png", Texture.class), 0, 0);
-        game.batch.end();
-        stage.getBatch().setProjectionMatrix(camera.combined);
-        stage.draw();
+            if (dead) {
+                game.manager.get("fail.wav", Sound.class).play();
+                game.lastScore = (int) score;
+                if (game.lastScore > game.topScore) {
+                    game.topScore = game.lastScore;
+                }
+                game.setScreen(new GameOverScreen(game));
+                dispose();
+            }
+            // clear the screen with a color
+            ScreenUtils.clear(0.3f, 0.8f, 0.8f, 1);
+            // tell the camera to update its matrices.
+            camera.update();
+            // tell the SpriteBatch to render in the
+            // coordinate system specified by the camera.
+            batch.setProjectionMatrix(camera.combined);
+            // begin a new batch
+            batch.begin();
+            batch.draw(game.manager.get("background.png", Texture.class), 0, 0);
+            game.smallFont.draw(batch, "Score: " + (int) score, 10, 470);
+            batch.end();
 
-        if (Gdx.input.justTouched()) {
-            game.manager.get("flap.wav", Sound.class).play();
-            player.impulso();
+            // Stage batch: Actors
+            stage.getBatch().setProjectionMatrix(camera.combined);
+            stage.draw();
+
+            // process user input
+            if (Gdx.input.justTouched()) {
+                game.manager.get("flap.wav", Sound.class).play();
+                player.impulso();
+            }
+
+            if (Gdx.input.isTouched()) {
+                //Guardar la posició del player
+                float touchX = Gdx.input.getX();
+                float touchY = Gdx.input.getY();
+
+                //Transformar aquestes posiccions en posicions de càmara
+                touchX = camera.unproject(new Vector3(touchX, touchY, 0)).x;
+                touchY = camera.unproject(new Vector3(touchX, touchY, 0)).y;
+
+                //Establir un àrea per el botò
+                float pauseButtonX = pauseButton.getX();
+                float pauseButtonY = pauseButton.getY();
+                float pauseButtonWidth = pauseButton.getWidth();
+                float pauseButtonHeight = pauseButton.getHeight();
+
+                //Si la pantalla detecta que s'ha pulsat el botó, inicia el métode de pausar el joc
+                if (touchX >= pauseButtonX && touchX <= pauseButtonX + pauseButtonWidth &&
+                        touchY >= pauseButtonY && touchY <= pauseButtonY + pauseButtonHeight) {
+                    pauseGame();
+                }
+            }
+            stage.act();
         }
-        stage.act();
     }
+
 
     @Override
     public void resize(int width, int height) {
     }
 
     @Override
-    public void show() {  // Botón de pausa
-        Texture pauseButtonTexture = game.manager.get("pause_button.png", Texture.class);
-        pauseButton = new ImageButton(pauseButtonTexture);
-        pauseButton.setPosition(10, 10);
-        pauseButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                pauseGame();
-            }
-        });
+    public void show() {
+        Texture pauseButtonTexture = new Texture(Gdx.files.internal("button_up.png"));
+        TextureRegionDrawable pauseButtonDrawable = new TextureRegionDrawable(new TextureRegion(pauseButtonTexture));
+        ImageButton.ImageButtonStyle pauseButtonStyle = new ImageButton.ImageButtonStyle();
+        pauseButtonStyle.up = pauseButtonDrawable;
+
+        pauseButton = new ImageButton(pauseButtonStyle);
+        pauseButton.setPosition(10, 350);
         stage.addActor(pauseButton);
     }
 
@@ -141,6 +178,7 @@ public class GameScreen implements Screen {
 
     @Override
     public void pause() {
+        pauseGame();
     }
 
     @Override
@@ -149,10 +187,13 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
+        batch.dispose();
     }
 
     private void spawnObstacle() {
+        // Calcula la alçada de l'obstacle aleatòriament
         float holey = MathUtils.random(50, 230);
+        // Crea dos obstacles: Una tubería superior i una inferior
         Pipe pipe1 = new Pipe();
         pipe1.setX(800);
         pipe1.setY(holey - 230);
@@ -170,19 +211,46 @@ public class GameScreen implements Screen {
         lastObstacleTime = TimeUtils.nanoTime();
     }
 
-     private void pauseGame() {
-    pause = true;
-    pausedScore = score;
-    pausedPlayerX = player.getX();
-    pausedPlayerY = player.getY();
+    private void pauseGame() {
+        //Reverteix el valor del boolean pause i guarda tant la puntuació com les posiciens en variables
+        pause = true;
+        pausedScore = score;
+        pausedPlayerX = player.getX();
+        pausedPlayerY = player.getY();
 
-    for (Actor actor : stage.getActors()) {
-        if (actor instanceof Pipe) {
-            Pipe pipe = (Pipe) actor;
-            pipe.setPaused(true);
+        //Para l'instanciació de les tuberies
+        for (Actor actor : stage.getActors()) {
+            if (actor instanceof Pipe) {
+                Pipe pipe = (Pipe) actor;
+                pipe.setPaused(true);
+            }
         }
+
+        //Para el render de la classe
+        Gdx.graphics.setContinuousRendering(false);
+
+        //Es pasen les variables a la nova pantalla
+        game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerX, pausedPlayerY));
     }
 
-    game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerX, pausedPlayerY));
-}
+    public void resumeGame(float playerX, float playerY, float score) {
+        //Recuperem els valos de pausegame() i tornem a canviar el valor del boolean
+        this.player.setX(pausedPlayerX);
+        this.player.setY(pausedPlayerY);
+        this.score = pausedScore;
+        this.pause = false;
+
+        //Per fer que les tuberies continuin funcionant
+        for (Actor actor : stage.getActors()) {
+            if (actor instanceof Pipe) {
+                Pipe pipe = (Pipe) actor;
+                pipe.setPaused(false);
+            }
+        }
+
+        //Es renauda el render
+        Gdx.graphics.setContinuousRendering(true);
+        Gdx.graphics.requestRendering();
+    }
+
 }
