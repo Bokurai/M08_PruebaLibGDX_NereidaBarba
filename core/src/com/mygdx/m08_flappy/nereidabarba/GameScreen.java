@@ -134,7 +134,6 @@ public class GameScreen implements Screen {
         });
         stage.addActor(pauseButton);
     }
-    }
 
     @Override
     public void hide() {
@@ -172,11 +171,11 @@ public class GameScreen implements Screen {
     }
 
       private void pauseGame() {
-           paused = true;
+        paused = true;
         pausedScore = score;
         pausedPlayerX = player.getX();
         pausedPlayerY = player.getY();
         pausedPipeIterator = obstacles.iterator();
-        game.setScreen(new PauseScreen(game, this));
+        game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerX, pausedPlayerY, pausedPipeIterator));
     }
 }
