@@ -26,6 +26,7 @@ public class Bird extends Game {
 		manager.load("flap.wav", Sound.class);
 		manager.load("fail.wav", Sound.class);
 		manager.load("button_up.png", Texture.class);
+		manager.load("strawberry.png", Texture.class);
 		manager.finishLoading();
 		batch = new SpriteBatch();
 // Create bitmap fonts from TrueType font

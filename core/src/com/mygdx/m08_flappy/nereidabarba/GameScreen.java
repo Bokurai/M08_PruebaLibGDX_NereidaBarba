@@ -3,10 +3,8 @@ package com.mygdx.m08_flappy.nereidabarba;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
@@ -23,6 +21,8 @@ import java.util.Iterator;
 
 public class GameScreen implements Screen {
     final Bird game;
+
+    Array<Strawberry> strawberries;
     OrthographicCamera camera;
     boolean dead;
     boolean pause;
@@ -34,9 +34,13 @@ public class GameScreen implements Screen {
     float pausedScore;
     float pausedPlayerX;
     float pausedPlayerY;
-    private boolean lastObstaclePassed;
-    private ImageButton pauseButton;
-    private SpriteBatch batch;
+   boolean lastObstaclePassed;
+   ImageButton pauseButton;
+    SpriteBatch batch;
+
+    private static final int STRAWBERRY_SPAWN_THRESHOLD = 5; // Cantidad de puntos para que aparezca una fresa
+
+
 
     public GameScreen(final Bird gam) {
         this.game = gam;
@@ -55,6 +59,8 @@ public class GameScreen implements Screen {
 
         score = 0;
         lastObstaclePassed = false;
+
+        strawberries = new Array<Strawberry>();
 
         batch = new SpriteBatch();
     }
@@ -118,11 +124,15 @@ public class GameScreen implements Screen {
             batch.begin();
             batch.draw(game.manager.get("background.png", Texture.class), 0, 0);
             game.smallFont.draw(batch, "Score: " + (int) score, 10, 470);
+
             batch.end();
 
-            // Stage batch: Actors
             stage.getBatch().setProjectionMatrix(camera.combined);
             stage.draw();
+
+            if ((int) score >= STRAWBERRY_SPAWN_THRESHOLD && (int) score % STRAWBERRY_SPAWN_THRESHOLD == 0) {
+                spawnStrawberry();
+            }
 
             // process user input
             if (Gdx.input.justTouched()) {
@@ -150,7 +160,10 @@ public class GameScreen implements Screen {
                         touchY >= pauseButtonY && touchY <= pauseButtonY + pauseButtonHeight) {
                     pauseGame();
                 }
+
             }
+
+
             stage.act();
         }
     }
@@ -211,6 +224,23 @@ public class GameScreen implements Screen {
         lastObstacleTime = TimeUtils.nanoTime();
     }
 
+    private void spawnStrawberry() {
+        // Calcular posición y altura aleatoria para la fresa
+        float strawberryY = MathUtils.random(50, 430);
+
+        // Crear la fresa y configurar su posición
+        Strawberry strawberry = new Strawberry(game.manager);
+        strawberry.setPosition(800, strawberryY);
+
+        // Agregar la fresa al escenario y al array de fresas
+        stage.addActor(strawberry);
+        strawberries.add(strawberry);
+
+        // Actualizar el tiempo del último objeto generado
+        lastObstacleTime = TimeUtils.nanoTime();
+    }
+
+
     private void pauseGame() {
         //Reverteix el valor del boolean pause i guarda tant la puntuació com les posiciens en variables
         pause = true;
@@ -225,7 +255,6 @@ public class GameScreen implements Screen {
                 pipe.setPaused(true);
             }
         }
-
         //Para el render de la classe
         Gdx.graphics.setContinuousRendering(false);
 
