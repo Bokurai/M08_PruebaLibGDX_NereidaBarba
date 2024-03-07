@@ -170,12 +170,19 @@ public class GameScreen implements Screen {
         lastObstacleTime = TimeUtils.nanoTime();
     }
 
-      private void pauseGame() {
-        paused = true;
-        pausedScore = score;
-        pausedPlayerX = player.getX();
-        pausedPlayerY = player.getY();
-        pausedPipeIterator = obstacles.iterator();
-        game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerX, pausedPlayerY, pausedPipeIterator));
+     private void pauseGame() {
+    pause = true;
+    pausedScore = score;
+    pausedPlayerX = player.getX();
+    pausedPlayerY = player.getY();
+
+    for (Actor actor : stage.getActors()) {
+        if (actor instanceof Pipe) {
+            Pipe pipe = (Pipe) actor;
+            pipe.setPaused(true);
+        }
     }
+
+    game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerX, pausedPlayerY));
+}
 }
