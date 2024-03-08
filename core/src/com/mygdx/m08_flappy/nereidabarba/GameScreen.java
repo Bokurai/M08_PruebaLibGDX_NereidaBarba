@@ -3,6 +3,7 @@ package com.mygdx.m08_flappy.nereidabarba;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
+import java.util.Random;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -37,8 +38,13 @@ public class GameScreen implements Screen {
     boolean lastObstaclePassed;
     ImageButton pauseButton;
     SpriteBatch batch;
+    Random random;
     boolean strawberryAppears;
+    int scoreForNextStrawberry = 5;
+    long lastStrawberryTime;
+    int lastStrawberryScore = 0;
 
+    int nextStrawberryScore = 5;
 
     public GameScreen(final Bird gam) {
         this.game = gam;
@@ -54,10 +60,11 @@ public class GameScreen implements Screen {
         // create the obstacles array and spawn the first obstacle
         obstacles = new Array<Pipe>();
         spawnObstacle();
-
+        random = new Random();
         strawberryAppears = false;
         score = 0;
         lastObstaclePassed = false;
+        lastStrawberryTime = TimeUtils.nanoTime();
 
         strawberries = new Array<Strawberry>();
 
@@ -80,8 +87,9 @@ public class GameScreen implements Screen {
                 spawnObstacle();
             }
 
-            if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
-                strawberryAppears = true;
+            if ((int) score > lastStrawberryScore + scoreForNextStrawberry) {
+                spawnStrawberry();
+                lastStrawberryScore = (int) score;
             }
             // Comprova si les tuberies colisionen amb el jugador
             Iterator<Pipe> iter = obstacles.iterator();
@@ -219,24 +227,53 @@ public class GameScreen implements Screen {
         obstacles.add(pipe2);
         stage.addActor(pipe2);
         lastObstacleTime = TimeUtils.nanoTime();
-        if(strawberryAppears){
-            float strawberryX = (pipe1.getX() + pipe2.getX() + pipe2.getWidth())/2;
-            float strawberryY = (pipe1.getY() + pipe2.getY() + pipe1.getHeight())/2;
-            spawnStrawberry(strawberryX, strawberryY);
-            strawberryAppears = false;
+    }
+
+
+
+
+
+
+    private void spawnStrawberry() {
+        if ((int) score >= nextStrawberryScore) {
+            Strawberry strawberry = new Strawberry();
+            strawberry.setManager(game.manager); // Establece el AssetManager para la fresa
+            float safeRange = 200;
+            float randomX, randomY;
+            do {
+                randomX = MathUtils.random(0, Gdx.graphics.getWidth() - strawberry.getWidth());
+                randomY = MathUtils.random(0, Gdx.graphics.getHeight() - strawberry.getHeight());
+                strawberryAppears = true;
+            } while (isNearPipe(randomX, randomY, safeRange));
+
+            strawberry.setPosition(randomX, randomY);
+            strawberries.add(strawberry);
+            stage.addActor(strawberry);
+
+            // Incrementar el puntaje necesario para la próxima fresa
+            nextStrawberryScore += 5; // Puedes ajustar este valor según tus necesidades
         }
-
     }
 
-    private void spawnStrawberry(float x, float y) {
-        Strawberry strawberry = new Strawberry();
-        strawberry.setX(x);
-        strawberry.setY(y);
-        strawberry.setManager(game.manager);
-        strawberries.add(strawberry);
-        stage.addActor(strawberry);
-        lastObstacleTime = TimeUtils.nanoTime();
+
+    private boolean isNearPipe(float x, float y, float safeRange) {
+        for (Pipe pipe : obstacles) {
+            float pipeCenterX = pipe.getX() + pipe.getWidth() / 2;
+            float pipeCenterY = pipe.getY() + pipe.getHeight() / 2;
+            float distance = (float) Math.sqrt(Math.pow(x - pipeCenterX, 2) + Math.pow(y - pipeCenterY, 2));
+
+            if (distance < safeRange) {
+                Gdx.app.log("GameScreen", "Strawberry removed near pipe");
+                return true;
+            }
+        }
+        return false;
     }
+
+
+
+
+
 
 
     private void pauseGame() {
