@@ -38,6 +38,8 @@ public class GameScreen implements Screen {
     ImageButton pauseButton;
     SpriteBatch batch;
     boolean strawberryAppears;
+    Array<Pipe> pausedObstacles;
+
 
 
     public GameScreen(final Bird gam) {
@@ -60,6 +62,7 @@ public class GameScreen implements Screen {
         score = 0;
         lastObstaclePassed = false;
 
+        pausedObstacles = new Array<Pipe>();
 
         batch = new SpriteBatch();
     }
@@ -216,32 +219,35 @@ public class GameScreen implements Screen {
     }
 
     private void spawnObstacle() {
-        // Calcula la alçada de l'obstacle aleatòriament
-        float holey = MathUtils.random(50, 230);
-        // Crea dos obstacles: Una tubería superior i una inferior
-        Pipe pipe1 = new Pipe();
-        pipe1.setX(800);
-        pipe1.setY(holey - 230);
-        pipe1.setUpsideDown(true);
-        pipe1.setManager(game.manager);
-        obstacles.add(pipe1);
-        stage.addActor(pipe1);
-        Pipe pipe2 = new Pipe();
-        pipe2.setX(800);
-        pipe2.setY(holey + 200);
-        pipe2.setUpsideDown(false);
-        pipe2.setManager(game.manager);
-        obstacles.add(pipe2);
-        stage.addActor(pipe2);
-        lastObstacleTime = TimeUtils.nanoTime();
-        if(!strawberryAppears){
-            float strawberryX = (pipe1.getX() + pipe2.getX() + pipe2.getWidth())/2;
-            float strawberryY = (pipe1.getY() + pipe2.getY() + pipe1.getHeight())/2;
-            spawnStrawberry(strawberryX, strawberryY);
-            strawberryAppears = false;
-        }
+        if (!pause) {
+            float holey = MathUtils.random(50, 230);
+            Pipe pipe1 = new Pipe();
+            pipe1.setX(800);
+            pipe1.setY(holey - 230);
+            pipe1.setUpsideDown(true);
+            pipe1.setManager(game.manager);
+            obstacles.add(pipe1);
+            stage.addActor(pipe1);
 
+            Pipe pipe2 = new Pipe();
+            pipe2.setX(800);
+            pipe2.setY(holey + 200);
+            pipe2.setUpsideDown(false);
+            pipe2.setManager(game.manager);
+            obstacles.add(pipe2);
+            stage.addActor(pipe2);
+
+            lastObstacleTime = TimeUtils.nanoTime();
+
+            if (!strawberryAppears) {
+                float strawberryX = (pipe1.getX() + pipe2.getX() + pipe2.getWidth()) / 2;
+                float strawberryY = (pipe1.getY() + pipe2.getY() + pipe1.getHeight()) / 2;
+                spawnStrawberry(strawberryX, strawberryY);
+                strawberryAppears = false;
+            }
+        }
     }
+
 
     private void spawnStrawberry(float x, float y) {
         if (MathUtils.randomBoolean(0.25f)) {
@@ -255,46 +261,37 @@ public class GameScreen implements Screen {
         }
     }
 
-
     private void pauseGame() {
-        //Reverteix el valor del boolean pause i guarda tant la puntuació com les posiciens en variables
         pause = true;
         pausedScore = score;
         pausedPlayerX = player.getX();
         pausedPlayerY = player.getY();
 
-        //Para l'instanciació de les tuberies
-        for (Actor actor : stage.getActors()) {
-            if (actor instanceof Pipe) {
-                Pipe pipe = (Pipe) actor;
-                pipe.setPaused(true);
-            }
+        for (Pipe pipe : obstacles) {
+            pipe.setPaused(true);
         }
-        //Para el render de la classe
+
+        lastObstacleTime -= TimeUtils.nanoTime();
         Gdx.graphics.setContinuousRendering(false);
 
-        //Es pasen les variables a la nova pantalla
         game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerY, pausedPlayerX));
     }
 
     public void resumeGame(float playerX, float playerY, float score) {
-        //Recuperem els valos de pausegame() i tornem a canviar el valor del boolean
         this.player.setX(pausedPlayerX);
         this.player.setY(pausedPlayerY);
         this.score = pausedScore;
         this.pause = false;
 
-        //Per fer que les tuberies continuin funcionant
-        for (Actor actor : stage.getActors()) {
-            if (actor instanceof Pipe) {
-                Pipe pipe = (Pipe) actor;
-                pipe.setPaused(false);
-            }
+        for (Pipe pipe : obstacles) {
+            pipe.setPaused(false);
         }
 
-        //Es renauda el render
+        lastObstacleTime += TimeUtils.nanoTime();
         Gdx.graphics.setContinuousRendering(true);
         Gdx.graphics.requestRendering();
     }
+
+
 
 }
