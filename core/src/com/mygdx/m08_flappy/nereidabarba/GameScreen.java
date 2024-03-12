@@ -273,7 +273,6 @@ public class GameScreen implements Screen {
 
         lastObstacleTime -= TimeUtils.nanoTime();
         Gdx.graphics.setContinuousRendering(false);
-
         game.setScreen(new PauseScreen(game, this, pausedScore, pausedPlayerY, pausedPlayerX));
     }
 
