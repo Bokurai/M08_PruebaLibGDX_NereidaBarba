@@ -44,7 +44,9 @@ public class Strawberry extends Actor {
         this.manager = manager;
     }
 
-
+    public boolean collideBird(Player player) {
+        return bounds.overlaps(player.getBounds());
+    }
     public void setPaused(boolean paused) {
         this.paused = paused;
     }

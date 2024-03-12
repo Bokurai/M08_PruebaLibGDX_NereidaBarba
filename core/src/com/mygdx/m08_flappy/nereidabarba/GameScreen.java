@@ -52,6 +52,7 @@ public class GameScreen implements Screen {
         stage.addActor(player);
 
         // create the obstacles array and spawn the first obstacle
+        strawberries = new Array<Strawberry>();
         obstacles = new Array<Pipe>();
         spawnObstacle();
 
@@ -59,7 +60,6 @@ public class GameScreen implements Screen {
         score = 0;
         lastObstaclePassed = false;
 
-        strawberries = new Array<Strawberry>();
 
         batch = new SpriteBatch();
     }
@@ -80,7 +80,7 @@ public class GameScreen implements Screen {
                 spawnObstacle();
             }
 
-            if (TimeUtils.nanoTime() - lastObstacleTime > 1500000000) {
+            if (TimeUtils.nanoTime() - lastObstacleTime > 2000000000) {
                 strawberryAppears = true;
             }
             // Comprova si les tuberies colisionen amb el jugador
@@ -116,6 +116,18 @@ public class GameScreen implements Screen {
                 game.setScreen(new GameOverScreen(game));
                 dispose();
             }
+
+            Iterator<Strawberry> iterator = strawberries.iterator();
+            while (iterator.hasNext()) {
+                Strawberry strawberry = iterator.next();
+                if (strawberry.collideBird(player)) {
+                    score += 20;
+                    iterator.remove();
+                    strawberry.remove();
+                    break;
+                }
+            }
+
             // clear the screen with a color
             ScreenUtils.clear(0.3f, 0.8f, 0.8f, 1);
             // tell the camera to update its matrices.
@@ -125,7 +137,9 @@ public class GameScreen implements Screen {
             batch.setProjectionMatrix(camera.combined);
             // begin a new batch
             batch.begin();
+            // draw the background
             batch.draw(game.manager.get("background.png", Texture.class), 0, 0);
+            // draw the score
             game.smallFont.draw(batch, "Score: " + (int) score, 10, 470);
 
             batch.end();
@@ -164,6 +178,7 @@ public class GameScreen implements Screen {
             stage.act();
         }
     }
+
 
 
     @Override
@@ -229,13 +244,15 @@ public class GameScreen implements Screen {
     }
 
     private void spawnStrawberry(float x, float y) {
-        Strawberry strawberry = new Strawberry();
-        strawberry.setX(x);
-        strawberry.setY(y);
-        strawberry.setManager(game.manager);
-        strawberries.add(strawberry);
-        stage.addActor(strawberry);
-        lastObstacleTime = TimeUtils.nanoTime();
+        if (MathUtils.randomBoolean(0.25f)) {
+            Strawberry strawberry = new Strawberry();
+            strawberry.setX(x);
+            strawberry.setY(y);
+            strawberry.setManager(game.manager);
+            strawberries.add(strawberry);
+            stage.addActor(strawberry);
+            lastObstacleTime = TimeUtils.nanoTime();
+        }
     }
 
 
