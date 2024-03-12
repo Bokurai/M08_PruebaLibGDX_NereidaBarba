@@ -219,7 +219,7 @@ public class GameScreen implements Screen {
         obstacles.add(pipe2);
         stage.addActor(pipe2);
         lastObstacleTime = TimeUtils.nanoTime();
-        if(strawberryAppears){
+        if(!strawberryAppears){
             float strawberryX = (pipe1.getX() + pipe2.getX() + pipe2.getWidth())/2;
             float strawberryY = (pipe1.getY() + pipe2.getY() + pipe1.getHeight())/2;
             spawnStrawberry(strawberryX, strawberryY);
